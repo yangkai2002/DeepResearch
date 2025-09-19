@@ -33,7 +33,7 @@ alt="Alibaba-NLP%2FWebAgent | Trendshift" style="width: 250px; height: 55px;" wi
 
 ## 📰 News and Updates
 
-- `2025.09.20` 🎉🎉🎉**WebDancer** is accepted by NeurIPS 2025.
+- `2025.09.19` 🎉🎉🎉**WebDancer** is accepted by NeurIPS 2025.
 - `2025.08.28` 🔥🔥🔥[**WebShaper-32B**](https://huggingface.co/Alibaba-NLP/WebShaper-32B) is released.
 - `2025.08.26` 🔥🔥🔥[**WebSailor-32B**](https://huggingface.co/Alibaba-NLP/WebSailor-32B) and [**WebSailor-7B**](https://huggingface.co/Alibaba-NLP/WebSailor-7B) is released.
 - `2025.08.07` 🔥🔥🔥We release **WebWatcher**: Breaking New Frontier of Vision-Language Deep Research Agent.
