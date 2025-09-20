@@ -104,6 +104,14 @@ bash run_react_infer.sh
 
 With these steps, you can fully prepare the environment, configure the dataset, and run the model. For more details, consult the inline comments in each script or open an issue.
 
+### 6. You can use OpenRouter's API to call our model
+Tongyi-DeepResearch-30B-A3B is now available at [OpenRouter](https://openrouter.ai/alibaba/tongyi-deepresearch-30b-a3b). You can run the inference without any GPUs.
+
+You need to modify the following in the file [inference/react_agent.py](https://github.com/Alibaba-NLP/DeepResearch/blob/main/inference/react_agent.py):
+ - In the call_server function: Set the API key and URL to your OpenRouter account’s API and URL.
+ - Change the model name to alibaba/tongyi-deepresearch-30b-a3b.
+ - Adjust the content concatenation way as described in the comments on lines **88–91.**
+
 ## Benchmark Evaluation
 
 We provide benchmark evaluation scripts for various datasets. Please refer to the [evaluation scripts](./evaluation/) directory for more details.
