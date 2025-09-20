@@ -85,9 +85,8 @@ class MultiTurnReactAgent(FnCallAgent):
                 )
                 content = chat_response.choices[0].message.content
 
-                # OpenRouter provides API calling. If you use OpenRouter, you can uncomment line 88 - 91 and comment line 86
+                # OpenRouter provides API calling. If you want to use OpenRouter, you need to uncomment line 89 - 90.
                 # reasoning_content = "<think>\n" + chat_response.choices[0].message.reasoning.strip() + "\n</think>"
-                # content = chat_response.choices[0].message.content
                 # content = reasoning_content + content                
                 
                 if content and content.strip():
