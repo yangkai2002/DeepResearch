@@ -110,7 +110,7 @@ Tongyi-DeepResearch-30B-A3B is now available at [OpenRouter](https://openrouter.
 You need to modify the following in the file [inference/react_agent.py](https://github.com/Alibaba-NLP/DeepResearch/blob/main/inference/react_agent.py):
  - In the call_server function: Set the API key and URL to your OpenRouter account’s API and URL.
  - Change the model name to alibaba/tongyi-deepresearch-30b-a3b.
- - Adjust the content concatenation way as described in the comments on lines **88–91.**
+ - Adjust the content concatenation way as described in the comments on lines **88–90.**
 
 ## Benchmark Evaluation
 
