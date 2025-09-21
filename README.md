@@ -77,7 +77,30 @@ Install the required dependencies:
 pip install -r requirements.txt
 ```
 
-### 3. Prepare Evaluation Data
+
+### 3. Environment Configuration and Prepare Evaluation Data
+#### Environment Configuration
+Configure your API keys and settings by copying the example environment file:
+
+```bash
+# Copy the example environment file
+cp .env.example .env
+```
+
+Edit the `.env` file and provide your actual API keys and configuration values:
+
+- **SERPER_KEY_ID**: Get your key from [Serper.dev](https://serper.dev/) for web search and Google Scholar
+- **JINA_API_KEYS**: Get your key from [Jina.ai](https://jina.ai/) for web page reading
+- **API_KEY/API_BASE**: OpenAI-compatible API for page summarization from [OpenAI](https://platform.openai.com/)
+- **DASHSCOPE_API_KEY**: Get your key from [Dashscope](https://dashscope.aliyun.com/) for file parsing
+- **SANDBOX_FUSION_ENDPOINT**: Python interpreter sandbox endpoints (see [SandboxFusion](https://github.com/bytedance/SandboxFusion))
+- **MODEL_PATH**: Path to your model weights
+- **DATASET**: Name of your evaluation dataset
+- **OUTPUT_PATH**: Directory for saving results
+
+> **Note**: The `.env` file is gitignored, so your secrets will not be committed to the repository.
+
+#### Prepare Evaluation Data
 
 The system supports two input file formats: **JSON** and **JSONL**.
 
