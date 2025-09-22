@@ -5,7 +5,6 @@ from typing import Dict, Iterator, List, Literal, Optional, Tuple, Union
 from qwen_agent.llm.schema import Message
 from qwen_agent.utils.utils import build_text_completion_prompt
 from openai import OpenAI, APIError, APIConnectionError, APITimeoutError
-import tiktoken
 from transformers import AutoTokenizer 
 from datetime import datetime
 from qwen_agent.agents.fncall_agent import FnCallAgent
@@ -57,7 +56,7 @@ class MultiTurnReactAgent(FnCallAgent):
     def sanity_check_output(self, content):
         return "<think>" in content and "</think>" in content
     
-    def call_server(self, msgs, planning_port, token_count=0, max_tries=10):
+    def call_server(self, msgs, planning_port, max_tries=10):
         
         openai_api_key = "EMPTY"
         openai_api_base = f"http://127.0.0.1:{planning_port}/v1"
@@ -69,7 +68,6 @@ class MultiTurnReactAgent(FnCallAgent):
         )
 
         base_sleep_time = 1 
-        max_tokens = 128 * 1024 - token_count - 1000
         for attempt in range(max_tries):
             try:
                 print(f"--- Attempting to call the service, try {attempt + 1}/{max_tries} ---")
@@ -80,7 +78,7 @@ class MultiTurnReactAgent(FnCallAgent):
                     temperature=self.llm_generate_cfg.get('temperature', 0.6),
                     top_p=self.llm_generate_cfg.get('top_p', 0.95),
                     logprobs=True,
-                    max_tokens=max_tokens,
+                    max_tokens=10000,
                     presence_penalty=self.llm_generate_cfg.get('presence_penalty', 1.1)
                 )
                 content = chat_response.choices[0].message.content
@@ -111,16 +109,13 @@ class MultiTurnReactAgent(FnCallAgent):
         
         return f"vllm server error!!!"
 
-    def count_tokens(self, messages, model="gpt-4o"):
-        try: 
-            tokenizer = AutoTokenizer.from_pretrained(self.llm_local_path) 
-        except Exception as e: 
-            tokenizer = tiktoken.encoding_for_model(model)
+    def count_tokens(self, message):
+        tokenizer = AutoTokenizer.from_pretrained(self.llm_local_path) 
+        full_prompt = tokenizer.apply_chat_template(messages, tokenize=False)
+        tokens = tokenizer(full_prompt, return_tensors="pt")
+        token_count = len(tokens["input_ids"][0])
         
-        full_message = [Message(**x) for x in messages]
-        full_prompt = build_text_completion_prompt(full_message, allow_special=True)
-        
-        return len(tokenizer.encode(full_prompt))
+        return token_count
 
     def _run(self, data: str, model: str, **kwargs) -> List[List[Message]]:
         self.model=model
@@ -140,7 +135,6 @@ class MultiTurnReactAgent(FnCallAgent):
         messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": question}]
         num_llm_calls_available = MAX_LLM_CALL_PER_RUN
         round = 0
-        token_count = 0
         while num_llm_calls_available > 0:
             # Check whether time is reached
             if time.time() - start_time > 150 * 60:  # 150 minutes in seconds
@@ -156,7 +150,7 @@ class MultiTurnReactAgent(FnCallAgent):
                 return result
             round += 1
             num_llm_calls_available -= 1
-            content = self.call_server(messages, planning_port, token_count=token_count)
+            content = self.call_server(messages, planning_port)
             print(f'Round {round}: {content}')
             if '<tool_response>' in content:
                 pos = content.find('<tool_response>')
@@ -189,7 +183,7 @@ class MultiTurnReactAgent(FnCallAgent):
             if num_llm_calls_available <= 0 and '<answer>' not in content:
                 messages[-1]['content'] = 'Sorry, the number of llm calls exceeds the limit.'
 
-            max_tokens = 128 * 1024 - 3000
+            max_tokens = 110 * 1024
             token_count = self.count_tokens(messages)
             print(f"round: {round}, token count: {token_count}")
 
