@@ -48,6 +48,8 @@ You can directly download the model by following the links below.
 
 # News
 
+[2025/09/20]🚀 Tongyi-DeepResearch-30B-A3B is now on [OpenRouter](https://openrouter.ai/alibaba/tongyi-deepresearch-30b-a3b)! Follow the [Quick-start](https://github.com/Alibaba-NLP/DeepResearch?tab=readme-ov-file#6-you-can-use-openrouters-api-to-call-our-model) guide.
+
 [2025/09/17]🔥 We have released **Tongyi-DeepResearch-30B-A3B**.
 
 # Deep Research Benchmark Results
