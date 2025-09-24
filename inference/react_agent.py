@@ -109,7 +109,7 @@ class MultiTurnReactAgent(FnCallAgent):
         
         return f"vllm server error!!!"
 
-    def count_tokens(self, message):
+    def count_tokens(self, messages):
         tokenizer = AutoTokenizer.from_pretrained(self.llm_local_path) 
         full_prompt = tokenizer.apply_chat_template(messages, tokenize=False)
         tokens = tokenizer(full_prompt, return_tensors="pt")
