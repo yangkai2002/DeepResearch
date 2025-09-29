@@ -1,5 +1,11 @@
 # ReSum: Unlocking Long-Horizon Search Intelligence via Context Summarization
 
+<p align="center">
+  <!-- Placeholder for a logo. You can replace this with your own logo. -->
+  <img src="./assets/resum_icon.png" alt="logo" width="30%"/>
+</p>
+
+![version](https://img.shields.io/badge/version-1.0.0-blue) [![arXiv](https://img.shields.io/badge/arXiv-2509.13313-b31b1b.svg)](https://arxiv.org/abs/2509.13313)
 
 ## 🏅 Introduction
 
