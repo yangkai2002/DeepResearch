@@ -222,7 +222,7 @@ For communications, please contact Yong Jiang (yongjiang.jy@alibaba-inc.com).
 ```bibtex
 @misc{tongyidr,
   author={Tongyi DeepResearch Team},
-  title={Tongyi-DeepResearch},
+  title={Tongyi DeepResearch: A New Era of Open-Source AI Researchers},
   year={2025},
   howpublished={\url{https://github.com/Alibaba-NLP/DeepResearch}}
 }
