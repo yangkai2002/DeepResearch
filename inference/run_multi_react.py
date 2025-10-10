@@ -38,7 +38,8 @@ if __name__ == "__main__":
     model_name = os.path.basename(model.rstrip('/'))
 
     model_dir = os.path.join(output_base, f"{model_name}_sglang")
-    dataset_dir = os.path.join(model_dir, args.dataset)
+    dataset_name = os.path.basename(args.dataset.rstrip('/').split('.')[0])
+    dataset_dir = os.path.join(model_dir, dataset_name)
 
     os.makedirs(dataset_dir, exist_ok=True)
 
