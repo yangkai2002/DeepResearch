@@ -1,5 +1,7 @@
 # Environment files
 .env
+.vscode
+inference/profiler_traces
 
 # Python
 __pycache__/

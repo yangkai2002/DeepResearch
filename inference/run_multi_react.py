@@ -9,6 +9,7 @@ from datetime import datetime
 from react_agent import MultiTurnReactAgent
 import time
 import math
+from profiler_hook import AgentHookForProfiler
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -171,6 +172,9 @@ if __name__ == "__main__":
         )
 
         write_locks = {i: threading.Lock() for i in range(1, roll_out_count + 1)}
+        
+        p = AgentHookForProfiler(test_agent)
+        p.hook()
 
         with ThreadPoolExecutor(max_workers=args.max_workers) as executor:
             future_to_task = {
@@ -225,6 +229,7 @@ if __name__ == "__main__":
                         with open(output_file, "a", encoding="utf-8") as f:
                             f.write(json.dumps(error_result, ensure_ascii=False) + "\n")
 
+        p.unhook()
         print("\nAll tasks completed!")
 
     print(f"\nAll {roll_out_count} rollouts completed!")
