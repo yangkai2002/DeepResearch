@@ -5,6 +5,35 @@ from pathlib import Path
 from typing import Dict, List, Any, Optional
 from contextlib import contextmanager
 
+
+class EventContext:
+    """Mutable args container passed to the body of a profiled region.
+
+    Usage:
+        with profiler.record_function("llm: decode", {"model": model}) as evt:
+            # in-context add more fields
+            evt.set(tokens=tok_count, latency_ms=12.3)
+            # or
+            evt.update({"step": 2})
+
+    All fields collected in this context are merged into the event's `args` at exit.
+    """
+    def __init__(self, initial: Optional[Dict[str, Any]] = None):
+        self._args: Dict[str, Any] = dict(initial) if initial else {}
+
+    def set(self, **kwargs: Any) -> None:
+        self._args.update(kwargs)
+
+    def add(self, key: str, value: Any) -> None:
+        self._args[key] = value
+
+    def update(self, data: Dict[str, Any]) -> None:
+        self._args.update(data)
+
+    @property
+    def args(self) -> Dict[str, Any]:
+        return self._args
+
 class SimpleProfiler:
     def __init__(self, profile_dir: str = "./profiler_traces"):
         self.profile_dir = Path(profile_dir)
@@ -18,18 +47,21 @@ class SimpleProfiler:
         return int((time.perf_counter() - self.profiler_start_time) * 1_000_000)
     
     @contextmanager
-    def record_function(self, name: str, args: Optional[Dict] = None):
+    def record_function(self, name: str, args: Optional[Dict[str, Any]] = None):
         thread_id = threading.get_ident()
         thread_name = threading.current_thread().name
         start_time = self._get_timestamp_us()
-        
+
+        ctx = EventContext(args)
+
         try:
-            yield
+            # Yield a mutable context so caller can populate extra fields during the block
+            yield ctx
         finally:
             end_time = self._get_timestamp_us()
             duration = end_time - start_time
-            
-            event = {
+
+            event: Dict[str, Any] = {
                 "name": name,
                 "cat": "function",
                 "ph": "X",  # Complete event
@@ -38,10 +70,10 @@ class SimpleProfiler:
                 "pid": "main",
                 "tid": f"{thread_name}_{thread_id}",
             }
-            
-            if args:
-                event["args"] = args
-            
+
+            if ctx.args:
+                event["args"] = ctx.args
+
             with self.lock:
                 self.events.append(event)
     

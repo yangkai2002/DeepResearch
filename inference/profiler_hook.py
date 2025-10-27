@@ -1,13 +1,38 @@
 from typing import Callable
+import asyncio
 import sys
 import random
 import time
-from react_agent import MultiTurnReactAgent
+from react_agent import MultiTurnReactAgent, TOOL_MAP
 from simple_profiler import SimpleProfiler
 from openai import OpenAI, APIError, APIConnectionError, APITimeoutError
 
+def call_tool(self, profiler: SimpleProfiler, tool_name: str, tool_args: dict, **kwargs):
+    if tool_name in TOOL_MAP:
+        profile_context = profiler.record_function(f"tool: {tool_name}")
+        profile_evt = profile_context.__enter__()
+        tool_args["params"] = tool_args
+        if "python" in tool_name.lower():
+            result = TOOL_MAP['PythonInterpreter'].call(tool_args)
+        elif tool_name == "parse_file":
+            params = {"files": tool_args["files"]}
+            
+            raw_result = asyncio.run(TOOL_MAP[tool_name].call(params, file_root_path="./eval_data/file_corpus"))
+            result = raw_result
 
-def stream_call_server_with_profiler(self, msgs, planning_port, profiler: SimpleProfiler, max_tries=10):
+            if not isinstance(raw_result, str):
+                result = str(raw_result)
+        else:
+            raw_result = TOOL_MAP[tool_name].call(tool_args, **kwargs)
+            result = raw_result
+        profile_evt.set(tokens=self.count_tokens([{"role": "user", "content": result}]))
+        profile_context.__exit__(None, None, None)
+        return result
+    else:
+        return f"Error: Tool {tool_name} not found"
+    
+
+def call_server_stream(self, profiler: SimpleProfiler, msgs, planning_port, max_tries=10):
     openai_api_key = "EMPTY"
     openai_api_base = f"http://127.0.0.1:{planning_port}/v1"
 
@@ -37,15 +62,11 @@ def stream_call_server_with_profiler(self, msgs, planning_port, profiler: Simple
             content_parts = []
             token_count = 0
             
-            
-            prefill_recorded = False
-            decode_recorded = False
-            
-            prefill_context = None
-            decode_context = None
-            
             prefill_context = profiler.record_function("llm: prefill")
-            prefill_context.__enter__()
+            prefill_evt = prefill_context.__enter__()
+            
+            decode_context = None
+            decode_evt = None
 
             for chunk in chat_response:                    
                 if (chunk.choices and 
@@ -54,23 +75,26 @@ def stream_call_server_with_profiler(self, msgs, planning_port, profiler: Simple
                     hasattr(chunk.choices[0].delta, 'content') and
                     chunk.choices[0].delta.content is not None):
                     
-                    if prefill_recorded == False:
-                        prefill_recorded = True
+                    if prefill_context and prefill_evt:
+                        prefill_evt.set(tokens=1)
                         prefill_context.__exit__(None, None, None)
 
+                        prefill_context = None
+                        prefill_evt = None
+
                         decode_context = profiler.record_function("llm: decode")
-                        decode_context.__enter__()
+                        decode_evt = decode_context.__enter__()
                     
                     delta_content = chunk.choices[0].delta.content
                     content_parts.append(delta_content)
                     token_count += 1
             
-            if prefill_context and not prefill_recorded:
-                prefill_recorded = True
+            if prefill_context and prefill_evt:
+                prefill_evt.set(tokens=0)
                 prefill_context.__exit__(None, None, None)
 
-            if decode_context and not decode_recorded:
-                decode_recorded = True
+            if decode_context and decode_evt:
+                decode_evt.set(tokens=token_count)
                 decode_context.__exit__(None, None, None)
             
             content = ''.join(content_parts)
@@ -112,17 +136,19 @@ class AgentHookForProfiler:
         """Install wrappers on the agent that lazy-start the profiler in the call thread."""
         orig_call_server = getattr(self.agent, 'call_server')
         orig_custom_call_tool = getattr(self.agent, 'custom_call_tool')
+        
+        assert orig_call_server, "Agent has no call_server to wrap"
+        assert orig_custom_call_tool, "Agent has no custom_call_tool to wrap"
 
-        def wrapped_call_server(msgs, planning_port, *a, **kw):
-            assert orig_call_server is not None, "Agent has no call_server to wrap"
-            return stream_call_server_with_profiler(self.agent, msgs, planning_port, self.profiler, *a, **kw)
+        def wrapped_call_server(msgs, planning_port):
+            return call_server_stream(self.agent, self.profiler, msgs, planning_port)
             # with self.profiler.record_function(f"llm:{getattr(self.agent, 'model', 'unknown')}"):
-            #     return orig_call_server(msgs, planning_port, *a, **kw)
+            #     return orig_call_server(msgs, planning_port)
 
-        def wrapped_custom_call_tool(tool_name, tool_args, *a, **kw):
-            assert orig_custom_call_tool is not None, "Agent has no custom_call_tool to wrap"
-            with self.profiler.record_function(f"tool:{tool_name}"):
-                return orig_custom_call_tool(tool_name, tool_args, *a, **kw)
+        def wrapped_custom_call_tool(tool_name, tool_args, **kwargs):
+            return call_tool(self.agent, self.profiler, tool_name, tool_args, **kwargs)
+            # with self.profiler.record_function(f"tool: {tool_name}"):
+            #     return orig_custom_call_tool(tool_name, tool_args, **kwargs)
 
         setattr(self.agent, 'call_server', wrapped_call_server)
         setattr(self.agent, 'custom_call_tool', wrapped_custom_call_tool)
